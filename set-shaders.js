@@ -1769,7 +1769,7 @@ setShaders = function() {
     // vertex shader source code
     var vertCode = `
         // beginGLSL
-        attribute vec3 coordinates;
+        attribute vec2 coordinates;
         attribute vec4 color;
         attribute vec2 size;
         attribute vec2 uv;
@@ -1778,7 +1778,7 @@ setShaders = function() {
         varying vec2 wh;
         varying vec2 uvs;
         void main(void) {
-            gl_Position = vec4(coordinates, 1.0);
+            gl_Position = vec4(coordinates, 0.0, 1.0);
             gl_Position.x = gl_Position.x * (resolution.y / resolution.x);
         vColor = color;
         wh = size;
@@ -1868,7 +1868,7 @@ setShaders = function() {
     // vertex shader source code
     var vertCode = `
         // beginGLSL
-        attribute vec3 coordinates;
+        attribute vec2 coordinates;
         attribute vec4 color;
         attribute vec2 size;
         attribute vec2 uv;
@@ -1877,7 +1877,7 @@ setShaders = function() {
         varying vec2 wh;
         varying vec2 uvs;
         void main(void) {
-            gl_Position = vec4(coordinates, 1.0);
+            gl_Position = vec4(coordinates, 0.0, 1.0);
             gl_Position.x = gl_Position.x * (resolution.y / resolution.x);
         vColor = color;
         wh = size;
@@ -1968,7 +1968,7 @@ setShaders = function() {
     // vertex shader source code
     var vertCode = `
         // beginGLSL
-        attribute vec3 coordinates;
+        attribute vec2 coordinates;
         attribute vec4 color;
         attribute vec2 size;
         attribute vec2 uv;
@@ -1977,7 +1977,7 @@ setShaders = function() {
         varying vec2 wh;
         varying vec2 uvs;
         void main(void) {
-            gl_Position = vec4(coordinates, 1.0);
+            gl_Position = vec4(coordinates, 0.0, 1.0);
             gl_Position.x = gl_Position.x * (resolution.y / resolution.x);
         vColor = color;
         wh = size;
@@ -2065,7 +2065,7 @@ setShaders = function() {
     // vertex shader source code
     var vertCode = `
         // beginGLSL
-        attribute vec3 coordinates;
+        attribute vec2 coordinates;
         attribute vec4 color;
         attribute vec2 size;
         attribute vec2 uv;
@@ -2074,7 +2074,7 @@ setShaders = function() {
         varying vec2 wh;
         varying vec2 uvs;
         void main(void) {
-            gl_Position = vec4(coordinates, 1.0);
+            gl_Position = vec4(coordinates, 0.0, 1.0);
             gl_Position.x = gl_Position.x * (resolution.y / resolution.x);
         vColor = color;
         wh = size;
@@ -2160,22 +2160,29 @@ setShaders = function() {
     // vertex shader source code
     var vertCode = `
         // beginGLSL
-        attribute vec3 coordinates;
+        attribute vec2 coordinates;
         attribute vec4 color;
         attribute vec2 size;
         attribute vec2 uv;
+        attribute float radius;
+        attribute float border;
         uniform vec2 resolution;
         varying vec4 vColor;
         varying vec2 wh;
         varying vec2 uvs;
+        varying float vradius;
+        varying float vborder;
         void main(void) {
-            gl_Position = vec4(coordinates, 1.0);
+            gl_Position = vec4(coordinates, 0.0, 1.0);
             gl_Position.x = gl_Position.x * (resolution.y / resolution.x);
-        vColor = color;
-        wh = size;
+            vColor = color;
+            wh = size;
             uvs = uv;
-        // endGLSL
-    }`;
+            vradius = radius;
+            vborder = border;
+        }
+    // endGLSL
+    `;
     vertCode = vertCode.replace(/[^\x00-\x7F]/g, "");
     // Create a vertex shader object
     var vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -2191,6 +2198,8 @@ setShaders = function() {
     varying vec4 vColor;
     varying vec2 wh;
     varying vec2 uvs;
+    varying float vradius;
+    varying float vborder;
     float rand(vec2 co){
         return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(co.x)));
     }
@@ -2206,10 +2215,10 @@ setShaders = function() {
         uv *= wh;
         float noise = rand(uv + vec2(cos(time), sin(time))) * 0.1;
         uv -= wh * 0.5;
-        float radius = 0.1;
+        float radius = vradius;
         vec2 size = wh * 0.5 - radius;
         float col = length(max(abs(uv), size) - size) - radius;
-        float b = 0.1;
+        float b = vborder;
         col = (abs(col + b - (b*0.5)) * -1. + (b*0.5)) * (1./(b*0.5));
         // For a filled-out rectangle.
         // col = (min((col + b) * -1. + (b*0.5), 0.) + (b*0.5)) * (1./(b*0.5));
@@ -2218,11 +2227,12 @@ setShaders = function() {
         // col = min(col * -1. * (1. / (b * 0.5)), 1.0);
         // col = smoothstep(0., 1., col);
         // col = pow(max(0., col), 3.);
-                // col = smoothstep(0., 1., col);
+        // col = smoothstep(0., 1., col);
         gl_FragColor = vec4(vec3(1., 0., 0.), (col - noise));
         gl_FragColor = vec4(vec3(col, 0.1, 0.1), 1.0);
         gl_FragColor = vColor;
         gl_FragColor.a = col;
+        // gl_FragColor = vec4(vec3(vradius), 1.0);
     }
     // endGLSL
     `;

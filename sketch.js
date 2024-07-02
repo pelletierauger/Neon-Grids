@@ -70,112 +70,50 @@ function setup() {
 }
 
 draw = function() {
-    let ii = [0, 1, 2, 0, 2, 3];
-    indices = [];
-    vertices = [];
-    colors = [];
-    sizes = [];
-    uvs = [];
-    for (let j = 0; j < 1; j++) {
-        for (let k = 0; k < ii.length; k++) {
-            indices.push(ii[k] + (j*4));
-        }
-        let x1 = 0;
-        let y1 = 1;
-        let x0 = 0;
-        let y0 = -1;
-        let ml = makeLine(x0, y0, x1, y1, (1/(cnvs.height / cnvs.width)));
-        let vv = [
-            ml[0], ml[1], 0, 
-            ml[2], ml[3], 0,
-            ml[6], ml[7], 0,
-            ml[4], ml[5], 0,
-        ];
-        for (let k = 0; k < vv.length; k++) {
-            vertices.push(vv[k]);
-        }
-        let w = Math.hypot((ml[0] - ml[2]), (ml[1] - ml[3]));
-        let h = Math.hypot((ml[0] - ml[4]), (ml[1] - ml[5]));
-        sizes.push(w, h, w, h, w, h, w, h);
-        let cc = [
-            1, 0, 0, 1
-        ];        
-        let uv = [
-            0, 0, 
-            1, 0, 
-            1, 1, 
-            0, 1
-        ];
-        for (let k = 0; k < cc.length * 4; k++) {
-            colors.push(cc[k % (cc.length)]);
-        }
-        for (let k = 0; k < uv.length; k++) {
-            uvs.push(uv[k]);
-        }
-    }
-    var vertex_buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    // Create an empty buffer object and store Index data
-    var Index_Buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Index_Buffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-    // Create an empty buffer object and store Index data
-    var sizes_Buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, sizes_Buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sizes), gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    // Create an empty buffer object and store color data
-    var color_buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, color_buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-    var uv_buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, uv_buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STATIC_DRAW);
-    setShaders();
-    /* ======== Associating shaders to buffer objects =======*/
-    // Bind vertex buffer object
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
-    // Bind index buffer object
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Index_Buffer);
-    // Get the attribute location
-    var coord = gl.getAttribLocation(shaderProgram, "coordinates");
-    // point an attribute to the currently bound VBO
-    gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
-    // Enable the attribute
-    gl.enableVertexAttribArray(coord);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    gl.bindBuffer(gl.ARRAY_BUFFER, sizes_Buffer);
-    // Get the attribute location
-    var sizesAttribLocation = gl.getAttribLocation(shaderProgram, "size");
-    // point an attribute to the currently bound VBO
-    gl.vertexAttribPointer(sizesAttribLocation, 2, gl.FLOAT, false, 0, 0);
-    // Enable the attribute
-    gl.enableVertexAttribArray(sizesAttribLocation);
-    // bind the color buffer
-    gl.bindBuffer(gl.ARRAY_BUFFER, color_buffer);
-    // get the attribute location
-    var color = gl.getAttribLocation(shaderProgram, "color");
-    // point attribute to the volor buffer object
-    gl.vertexAttribPointer(color, 4, gl.FLOAT, false, 0, 0);
-    // enable the color attribute
-    gl.enableVertexAttribArray(color);
-    gl.bindBuffer(gl.ARRAY_BUFFER, uv_buffer);
-    var uvAttribLocation = gl.getAttribLocation(shaderProgram, "uv");
-    // point attribute to the volor buffer object
-    gl.vertexAttribPointer(uvAttribLocation, 2, gl.FLOAT, false, 0, 0);
-    // enable the color attribute
-    gl.enableVertexAttribArray(uvAttribLocation);
-    // Managing uniforms
-    timeUniformLocation = gl.getUniformLocation(shaderProgram, "time");
-    gl.uniform1f(timeUniformLocation, frameCount);
-    resolutionUniformLocation = gl.getUniformLocation(shaderProgram, "resolution");
-    gl.uniform2f(resolutionUniformLocation, cnvs.width, cnvs.height);
-    // Clear and draw
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+    resetRectangles();
+    let w = 16/9;
+    let r = 1, g = 0, b = 0, a = 1;
+    let radius = 0.1, border = 0.1;
+    let n = 3;
+    for (let i = 0; i < n; i++) {
+        let x1 = w/(n/2)*i-(w);
+        let x2 = w/(n/2)*(i+1)-w;
+        let y1 = 0, y2 = 1;
+        addRectangle(
+            x1, y1, x2, y2,
+            r, g, b, a,
+            radius, border
+        );
+        addRectangle(
+            x1, y1-1, x2, y2-1,
+            r, g, b, a,
+            radius, border
+        );
+        // console.log(i);
+    }
+    //  addRectangle(
+    //     0 - 0.25, 0 - 0.25, 0.5 - 0.25, 0.5 - 0.25,
+    //     r, g, b, a,
+    //     radius, border
+    // );
+    // addRectangle(
+    //     0 + 0.5, 0 + 0.5, 0.5 + 0.5, 0.5 + 0.5,
+    //     r, g, b, a,
+    //     radius, border
+    // );
+        //  addRectangle(
+        //     0, 0.5, 0.5, 0.5,
+        //     r, g, b, a,
+        //     radius, border
+        // );
+    // let x1 = -0.75, x2 = 0.75, y1 = -0.5, y2 = 0.5;
+    // addRectangle(
+    //     x1, y1, x2, y2,
+    //     r, g, b, a,
+    //     radius, border
+    // );
+    drawRectangles();
     if (exporting && frameCount < maxFrames) {
         frameExport();
     }
@@ -233,4 +171,139 @@ function keyPressed() {
             redraw();
         }
     }
+}
+
+function addRectangle(    
+    x1, y1, x2, y2,
+    r, g, b, a,
+    radius, border) {
+    let ii = [0, 1, 2, 0, 2, 3];
+    for (let k = 0; k < ii.length; k++) {
+        indices.push(ii[k]+(amountOfRectangles*4));
+    }
+    let vv = [
+        x1, y1, 
+        x2, y1,
+        x2, y2,
+        x1, y2,
+    ];
+    for (let k = 0; k < vv.length; k++) {
+        vertices.push(vv[k]);
+    }
+    let w = Math.hypot((x1 - x2), (y1 - y1));
+    let h = Math.hypot((x1 - x1), (y1 - y2));
+    sizes.push(w, h, w, h, w, h, w, h);
+    radii.push(radius, radius, radius, radius);
+    borders.push(border, border, border, border);
+    let cc = [
+        r, g, b, a
+    ];        
+    let uv = [
+        0, 0, 
+        1, 0, 
+        1, 1, 
+        0, 1
+    ];
+    for (let k = 0; k < cc.length * 4; k++) {
+        colors.push(cc[k % (cc.length)]);
+    }
+    for (let k = 0; k < uv.length; k++) {
+        uvs.push(uv[k]);
+    }
+    amountOfRectangles++;
+}
+
+function resetRectangles() {
+    amountOfRectangles = 0;
+    indices = [];
+    vertices = [];
+    colors = [];
+    sizes = [];
+    uvs = [];
+    radii = [];
+    borders = [];
+}
+
+function drawRectangles() {
+        var vertex_buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    // Create an empty buffer object and store Index data
+    var Index_Buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Index_Buffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+    // Create an empty buffer object and store Index data
+    var sizes_Buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, sizes_Buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sizes), gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    // Create an empty buffer object and store color data
+    var color_buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, color_buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+    var uv_buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, uv_buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STATIC_DRAW); 
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    var radii_buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, radii_buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(radii), gl.STATIC_DRAW);  
+    var borders_buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, borders_buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(borders), gl.STATIC_DRAW);
+    setShaders();
+    /* ======== Associating shaders to buffer objects =======*/
+    // Bind vertex buffer object
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+    // Bind index buffer object
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Index_Buffer);
+    // Get the attribute location
+    var coord = gl.getAttribLocation(shaderProgram, "coordinates");
+    // point an attribute to the currently bound VBO
+    gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
+    // Enable the attribute
+    gl.enableVertexAttribArray(coord);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    gl.bindBuffer(gl.ARRAY_BUFFER, sizes_Buffer);
+    // Get the attribute location
+    var sizesAttribLocation = gl.getAttribLocation(shaderProgram, "size");
+    // point an attribute to the currently bound VBO
+    gl.vertexAttribPointer(sizesAttribLocation, 2, gl.FLOAT, false, 0, 0);
+    // Enable the attribute
+    gl.enableVertexAttribArray(sizesAttribLocation);
+    // bind the color buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, color_buffer);
+    // get the attribute location
+    var color = gl.getAttribLocation(shaderProgram, "color");
+    // point attribute to the volor buffer object
+    gl.vertexAttribPointer(color, 4, gl.FLOAT, false, 0, 0);
+    // enable the color attribute
+    gl.enableVertexAttribArray(color);
+    gl.bindBuffer(gl.ARRAY_BUFFER, uv_buffer);
+    var uvAttribLocation = gl.getAttribLocation(shaderProgram, "uv");
+    // point attribute to the volor buffer object
+    gl.vertexAttribPointer(uvAttribLocation, 2, gl.FLOAT, false, 0, 0);
+    // enable the color attribute
+    gl.enableVertexAttribArray(uvAttribLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, radii_buffer);    
+    var radiusAttribLocation = gl.getAttribLocation(shaderProgram, "radius");
+    // point attribute to the volor buffer object
+    gl.vertexAttribPointer(radiusAttribLocation, 1, gl.FLOAT, false, 0, 0);
+    // enable the color attribute
+    gl.enableVertexAttribArray(radiusAttribLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, borders_buffer);    
+    var borderAttribLocation = gl.getAttribLocation(shaderProgram, "border");
+    // point attribute to the volor buffer object
+    gl.vertexAttribPointer(borderAttribLocation, 1, gl.FLOAT, false, 0, 0);
+    // enable the color attribute
+    gl.enableVertexAttribArray(borderAttribLocation);
+    // Managing uniforms
+    timeUniformLocation = gl.getUniformLocation(shaderProgram, "time");
+    gl.uniform1f(timeUniformLocation, frameCount);
+    resolutionUniformLocation = gl.getUniformLocation(shaderProgram, "resolution");
+    gl.uniform2f(resolutionUniformLocation, cnvs.width, cnvs.height);
+    // Draw
+    gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
 }
