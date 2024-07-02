@@ -1706,7 +1706,7 @@ setShaders = function() {
         float noise = rand(uv + vec2(cos(time), sin(time))) * 0.1;
         float col = float(0.0);
         uv -= wh * 0.5;
-        float b = 0.1;
+        float b = 0.2;
         if (abs(uv.x) > wh.x * 0.5 - b) {
             col = map(abs(uv.x), wh.x * 0.5 - b, wh.x * 0.5, 0., 1.);
         }
@@ -1720,12 +1720,99 @@ setShaders = function() {
         // col = 1.0 - length(abs(uv) - vec2(max(abs(uv.x), wh.x * 0.5 - b), max(abs(uv.y), wh.y * 0.5 - b)));
         // col = 1.0 - length(abs(uv) - max(abs(uv), wh * 0.5 - vec2(b)));
         // col = 1.0 - length(max(abs(uv), wh * 0.5 - vec2(b)) - abs(uv));
-        // col = length(max(abs(uv), wh * 0.5 - b) - wh * 0.5 - b);
-        // col = 1.0 -smoothstep(0.66, 0.33, col / 0.5);
-        col = 1.0-abs(col-0.5)*4.*(b*10.);
-        gl_FragColor = vec4(vec3(1., 0., 0.), (col - noise));
+        //length(max(abs(uv - pos),size) - size) - radius;
+        // smoothstep(0.66, 0.33, d / thickness);
+        // float f = 1.;
+        vec2 size = wh * 0.5 - b;
+        col = length(max(abs(uv), size) - size) - b;
+        col = (abs(col + 0.1 - 0.05)*-1.+0.05)*20.;
+        // col = smoothstep(0.66, 0.33, col / 0.0001);        
+        // col = length(max(abs(uv), size) - size) * 10.;
+        // col = 1.0 - col * 1000.;
+        // col = roundedRectangle(uv, vec2(0.), vec2(wh*0.5-b*1.), b*1., 0.00005);
+        // col = smoothstep(0., 1.0, col);
+        // col = smoothstep(1., 0., col / 0.0001);
+        // col = 1.0-abs(col-0.5)*2.*(b*10.);
+        // col = col - b + 0.1;
+        // col = col - b;
+        // col = 1.0 - abs(col * 20.-10.);
+        // gl_FragColor = vec4(vec3(1., 0., 0.), (col - noise));
+        gl_FragColor = vec4(vec3(col, 0.1, 0.1), 1.);
         // gl_FragColor = vec4(uv.x, uv.y, 0.1, 1.0);
         // gl_FragColor = vec4((rect) * vec3(1.0, 0.0, 0.0) + 0.1, 1.0 - noise);
+    }
+    // endGLSL
+    `;
+    fragCode = fragCode.replace(/[^\x00-\x7F]/g, "");
+    // Create fragment shader object
+    var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+    // Attach fragment shader source code
+    gl.shaderSource(fragShader, fragCode);
+    // Compile the fragmentt shader
+    gl.compileShader(fragShader);
+    // Create a shader program object to
+    // store the combined shader program
+    shaderProgram = gl.createProgram();
+    // Attach a vertex shader
+    gl.attachShader(shaderProgram, vertShader);
+    // Attach a fragment shader
+    gl.attachShader(shaderProgram, fragShader);
+    // Link both the programs
+    gl.linkProgram(shaderProgram);
+    // Use the combined shader program object
+    gl.useProgram(shaderProgram);
+}
+
+
+setShaders = function() {
+    /*======================= Shaders =======================*/
+    // vertex shader source code
+    var vertCode = `
+        attribute vec3 coordinates;
+        attribute vec4 color;
+        attribute vec2 size;
+        varying vec4 vColor;
+        varying vec2 wh;
+        void main(void) {
+            gl_Position = vec4(coordinates, 1.0);
+            gl_Position.x = gl_Position.x * (1600.0 / 2560.0);
+        vColor = color;
+        wh = size;
+    }`;
+    vertCode = vertCode.replace(/[^\x00-\x7F]/g, "");
+    // Create a vertex shader object
+    var vertShader = gl.createShader(gl.VERTEX_SHADER);
+    // Attach vertex shader source code
+    gl.shaderSource(vertShader, vertCode);
+    // Compile the vertex shader
+    gl.compileShader(vertShader);
+    // fragment shader source code
+    var fragCode = `
+    // beginGLSL
+    precision mediump float;
+    uniform float time;
+    varying vec4 vColor;
+    varying vec2 wh;
+    float rand(vec2 co){
+        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(co.x)));
+    }
+    float roundedRectangle (vec2 uv, vec2 pos, vec2 size, float radius, float thickness) {
+        float d = length(max(abs(uv - pos),size) - size) - radius;
+        return smoothstep(0.66, 0.33, d / thickness);
+    }
+    float map(float value, float min1, float max1, float min2, float max2) {
+        return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+    }
+    void main(void) {
+        vec2 uv = vColor.rb;
+        uv *= wh;
+        float noise = rand(uv + vec2(cos(time), sin(time))) * 0.1;
+        uv -= wh * 0.5;
+        float b = 0.1;
+        vec2 size = wh * 0.5 - b;
+        float col = length(max(abs(uv), size) - size) - b;
+        col = (abs(col + 0.1 - 0.05) * -1. + 0.05) * 20.;
+        gl_FragColor = vec4(vec3(1., 0., 0.), (col - noise));
     }
     // endGLSL
     `;
