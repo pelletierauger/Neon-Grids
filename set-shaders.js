@@ -1768,16 +1768,22 @@ setShaders = function() {
     /*======================= Shaders =======================*/
     // vertex shader source code
     var vertCode = `
+        // beginGLSL
         attribute vec3 coordinates;
         attribute vec4 color;
         attribute vec2 size;
+        attribute vec2 uv;
+        uniform vec2 resolution;
         varying vec4 vColor;
         varying vec2 wh;
+        varying vec2 uvs;
         void main(void) {
             gl_Position = vec4(coordinates, 1.0);
-            gl_Position.x = gl_Position.x * (1600.0 / 2560.0);
+            gl_Position.x = gl_Position.x * (resolution.y / resolution.x);
         vColor = color;
         wh = size;
+            uvs = uv;
+        // endGLSL
     }`;
     vertCode = vertCode.replace(/[^\x00-\x7F]/g, "");
     // Create a vertex shader object
@@ -1793,6 +1799,7 @@ setShaders = function() {
     uniform float time;
     varying vec4 vColor;
     varying vec2 wh;
+    varying vec2 uvs;
     float rand(vec2 co){
         return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(co.x)));
     }
@@ -1804,15 +1811,22 @@ setShaders = function() {
         return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
     }
     void main(void) {
-        vec2 uv = vColor.rb;
+        vec2 uv = uvs;
         uv *= wh;
         float noise = rand(uv + vec2(cos(time), sin(time))) * 0.1;
         uv -= wh * 0.5;
+        float radius = 0.2;
+        vec2 size = wh * 0.5 - radius;
+        float col = length(max(abs(uv), size) - size) - radius;
         float b = 0.1;
-        vec2 size = wh * 0.5 - b;
-        float col = length(max(abs(uv), size) - size) - b;
-        col = (abs(col + 0.1 - 0.05) * -1. + 0.05) * 20.;
+        col = (abs(col + b - (b*0.5)) * -1. + (b*0.5)) * (1./(b*0.5));
+        // col = smoothstep(0., 1., col);
+        // col = pow(max(0., col), 3.);
+                // col = smoothstep(0., 1., col);
         gl_FragColor = vec4(vec3(1., 0., 0.), (col - noise));
+        gl_FragColor = vec4(vec3(col, 0.1, 0.1), 1.0);
+        gl_FragColor = vColor;
+        gl_FragColor.a = col;
     }
     // endGLSL
     `;

@@ -178,6 +178,7 @@ if (testnew) {
     vertices = [];
     colors = [];
     sizes = [];
+    uvs = [];
     for (let j = 0; j < 1; j++) {
         for (let k = 0; k < ii.length; k++) {
             indices.push(ii[k] + (j*4));
@@ -185,14 +186,14 @@ if (testnew) {
         let nj = (Math.PI * 2 / 30 * j);
         nj = aj2[j];
         let x1 = 0;
-        let y1 = 0.95 * map(Math.cos(frameCount * 1e-2 + j), -1, 1, 1, 0.5);
+        let y1 = 1;
         let x0 = 0;
-        let y0 = -0.95 * map(Math.cos(frameCount * 1e-2 + j), -1, 1, 1, 0.5);
+        let y0 = -1;
         // x1 = 0.5;
         // y1 = 0;
         // y1 = 0.5; y0 = -0.5;
         // let ml = makeLine(x0, y0 - 0.75, x1, y1 - 0.75, 0.75);
-        let ml = makeLine(x0, y0, x1, y1, map(Math.sin(frameCount * 1e-2 + j), -1, 1, 0.25, 1.25));
+        let ml = makeLine(x0, y0, x1, y1, (1/(cnvs.height / cnvs.width)));
         let vv = [
             ml[0], ml[1], 0, 
             ml[2], ml[3], 0,
@@ -207,13 +208,19 @@ if (testnew) {
         sizes.push(w, h, w, h, w, h, w, h);
         let a = Math.sin(nj - frameCount * -1e-1) * 0.5 + 0.5;
         let cc = [
-            0, 0, 0, a, 
-            1, 0, 0, a, 
-            1, 0, 1, a, 
-            0, 0, 1, a,
+            1, 0, 0, 1
+        ];        
+        let uv = [
+            0, 0, 
+            1, 0, 
+            1, 1, 
+            0, 1
         ];
-        for (let k = 0; k < cc.length; k++) {
-            colors.push(cc[k]);
+        for (let k = 0; k < cc.length * 4; k++) {
+            colors.push(cc[k % (cc.length)]);
+        }
+        for (let k = 0; k < uv.length; k++) {
+            uvs.push(uv[k]);
         }
     }
 }
@@ -247,6 +254,9 @@ if (testnew) {
     var color_buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, color_buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+    var uv_buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, uv_buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STATIC_DRAW);
     setShaders();
     /* ======== Associating shaders to buffer objects =======*/
     // Bind vertex buffer object
@@ -275,6 +285,12 @@ if (testnew) {
     gl.vertexAttribPointer(color, 4, gl.FLOAT, false, 0, 0);
     // enable the color attribute
     gl.enableVertexAttribArray(color);
+    gl.bindBuffer(gl.ARRAY_BUFFER, uv_buffer);
+    var uvAttribLocation = gl.getAttribLocation(shaderProgram, "uv");
+    // point attribute to the volor buffer object
+    gl.vertexAttribPointer(uvAttribLocation, 2, gl.FLOAT, false, 0, 0);
+    // enable the color attribute
+    gl.enableVertexAttribArray(uvAttribLocation);
     /*============Drawing the Quad====================*/
     // gl.clear(gl.COLOR_BUFFER_BIT);
     // gl.colorMask(false, false, false, true);
@@ -286,6 +302,8 @@ if (testnew) {
     //Draw the triangle
     timeUniformLocation = gl.getUniformLocation(shaderProgram, "time");
     gl.uniform1f(timeUniformLocation, frameCount);
+    resolutionUniformLocation = gl.getUniformLocation(shaderProgram, "resolution");
+    gl.uniform2f(resolutionUniformLocation, cnvs.width, cnvs.height);
     
     gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
     if (exporting && frameCount < maxFrames) {
@@ -315,17 +333,3 @@ function keyPressed() {
         }
     }
 }
-
-const supported = (() => {
-    try {
-        if (typeof WebAssembly === "object" &&
-            typeof WebAssembly.instantiate === "function") {
-            const module = new WebAssembly.Module(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
-            if (module instanceof WebAssembly.Module)
-                return new WebAssembly.Instance(module) instanceof WebAssembly.Instance;
-        }
-    } catch (e) {}
-    return false;
-})();
-
-console.log(supported ? "WebAssembly is supported" : "WebAssembly is not supported");
