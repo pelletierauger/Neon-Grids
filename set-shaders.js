@@ -1862,6 +1862,106 @@ setShaders = function() {
     gl.useProgram(shaderProgram);
 }
 
+// Velour
+setShaders = function() {
+    /*======================= Shaders =======================*/
+    // vertex shader source code
+    var vertCode = `
+        // beginGLSL
+        attribute vec3 coordinates;
+        attribute vec4 color;
+        attribute vec2 size;
+        attribute vec2 uv;
+        uniform vec2 resolution;
+        varying vec4 vColor;
+        varying vec2 wh;
+        varying vec2 uvs;
+        void main(void) {
+            gl_Position = vec4(coordinates, 1.0);
+            gl_Position.x = gl_Position.x * (resolution.y / resolution.x);
+        vColor = color;
+        wh = size;
+            uvs = uv;
+        // endGLSL
+    }`;
+    vertCode = vertCode.replace(/[^\x00-\x7F]/g, "");
+    // Create a vertex shader object
+    var vertShader = gl.createShader(gl.VERTEX_SHADER);
+    // Attach vertex shader source code
+    gl.shaderSource(vertShader, vertCode);
+    // Compile the vertex shader
+    gl.compileShader(vertShader);
+    // fragment shader source code
+    var fragCode = `
+    // beginGLSL
+    precision mediump float;
+    uniform float time;
+    varying vec4 vColor;
+    varying vec2 wh;
+    varying vec2 uvs;
+    float rand(vec2 co){
+        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(co.x)));
+    }
+    float roundedRectangle (vec2 uv, vec2 pos, vec2 size, float radius, float thickness) {
+        float d = length(max(abs(uv - pos),size) - size) - radius;
+        return smoothstep(0.66, 0.33, d / thickness);
+    }
+    float map(float value, float min1, float max1, float min2, float max2) {
+        return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+    }
+    void main(void) {
+        vec2 uv = uvs;
+        uv *= wh;
+        float noise = rand(uv + vec2(cos(time), sin(time))) * 0.3;
+        uv -= wh * 0.5;
+        float radius = 0.6;
+        vec2 size = wh * 0.5 - radius;
+        float col = length(max(abs(uv), size) - size) - radius;
+        float b = 0.6;
+        // col += cos(uv.x * 50. * sin(col*1e1)) * 0.0125;
+        col += sin(uv.y * uv.x * 15. * sin(col*1e1) + time * 2e-1) * 0.0125;
+        col += sin(uv.y * uv.x * 15. * sin(col*1e1) + time * 2e-1) * 0.0125;
+        col += sin(uv.y * uv.x * 15. * sin(col*1e1) + time * 2e-1) * 0.0125;
+        col += sin(uv.y * uv.x * 15. * sin(col*1e1) + time * 2e-1) * 0.0125;
+        col = (abs(col + b - (b*0.5)) * -1. + (b*0.5)) * (1./(b*0.5));
+        // For a filled-out rectangle.
+        // col = (min((col + b) * -1. + (b*0.5), 0.) + (b*0.5)) * (1./(b*0.5));
+        // col = min((col+b) * -1. + b, b * 0.5) * (1./(b*0.5));
+        // col = ((col+b) * -1. + b) * (1./(b*0.5));
+        // col = min(col * -1. * (1. / (b * 0.5)), 1.0);
+        // col = smoothstep(0., 1., col);
+        float highlight = pow(max(0., col), 4.) * 0.5;
+        col = col * 0.75 + highlight;
+        // col = smoothstep(0., 1., col);
+        // col = pow(max(col,0.0), 0.65);
+        gl_FragColor = vec4(vec3(1., 0., 0.), (col - noise));
+        gl_FragColor = vec4(vec3(col, 0.1, 0.1), 1.0);
+        gl_FragColor = vColor;
+        gl_FragColor.a = col - noise;
+        gl_FragColor.g = highlight;
+    }
+    // endGLSL
+    `;
+    fragCode = fragCode.replace(/[^\x00-\x7F]/g, "");
+    // Create fragment shader object
+    var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+    // Attach fragment shader source code
+    gl.shaderSource(fragShader, fragCode);
+    // Compile the fragmentt shader
+    gl.compileShader(fragShader);
+    // Create a shader program object to
+    // store the combined shader program
+    shaderProgram = gl.createProgram();
+    // Attach a vertex shader
+    gl.attachShader(shaderProgram, vertShader);
+    // Attach a fragment shader
+    gl.attachShader(shaderProgram, fragShader);
+    // Link both the programs
+    gl.linkProgram(shaderProgram);
+    // Use the combined shader program object
+    gl.useProgram(shaderProgram);
+}
+
 // Fiery
 setShaders = function() {
     /*======================= Shaders =======================*/
