@@ -4,6 +4,7 @@ smoothDots.vertText = `
     // beginGLSL
     attribute vec2 coordinates;
     uniform float time;
+    varying float t;
     float roundedRectangle (vec2 uv, vec2 pos, vec2 size, float radius, float thickness) {
         float d = length(max(abs(uv - pos),size) - size) - radius;
         return smoothstep(0.66, 0.33, d / thickness * 5.0);
@@ -19,6 +20,7 @@ smoothDots.fragText = `
     // beginGLSL
     precision mediump float;
     // uniform float time;
+    varying float t;
     float rand(vec2 co){
         return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(co.x)));
     }
@@ -32,7 +34,8 @@ smoothDots.fragText = `
         l += (distSquared - (l * distSquared));
         float halo = (1.0 - length(pos - vec2(0.5)) * 2.)*0.5;
         l = smoothstep(0., 1., l);
-        gl_FragColor = vec4(vec3(1.0, pow(l, 2.)*0.75, 0.25), l+halo);
+        float noise = rand(pos - vec2(cos(t), sin(t))) * 0.0625;
+        gl_FragColor = vec4(vec3(1.0, pow(l, 2.)*0.75, 0.25), l+halo-noise);
     }
     // endGLSL
 `;
