@@ -73,8 +73,8 @@ draw = function() {
     gl.clear(gl.COLOR_BUFFER_BIT);
     resetRectangles();
     let w = 16/9;
-    let r = 1, g = 0, b = 0, a = 1;
-    let radius = 0.1, border = 0.1;
+    let r = 1, g = 0, b = 0.25, a = 1;
+    let radius = 0.3, border = 0.3;
     let n = 3;
     for (let i = 0; i < n; i++) {
         let x1 = w/(n/2)*i-(w);
