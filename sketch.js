@@ -9,6 +9,7 @@ let colors = [];
 let indices = [];
 let amountOfLines = 0;
 let drawCount = 0;
+let dotsVBuf;
 
 function setup() {
     socket = io.connect('http://localhost:8080');
@@ -28,6 +29,9 @@ function setup() {
     gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     // Set the view port
     gl.viewport(0, 0, cnvs.width, cnvs.height);
+    dotsVBuf = gl.createBuffer();
+    shadersReadyToInitiate = true;
+    initializeShaders();
     setTimeout(function() {
         scdConsoleArea.setAttribute("style", "display:block;");
         scdArea.style.display = "none";
@@ -84,13 +88,13 @@ draw = function() {
     let w = 16/9;
     let r = 1, g = 0, b = 0.25, a = 1;
     let radius = 0.15, border = 0.15;
-    let n = 6;
+    let n = 6, m = 3;
     for (let i = 0; i < n; i++) {
-        for (let j = 0; j < n; j++) {
+        for (let j = 0; j < m; j++) {
             let x1 = w/(n/2)*i-(w);
             let x2 = w/(n/2)*(i+1)-w;
-            let y1 = 1/(n/2)*j-(1);
-            let y2 = 1/(n/2)*(j+1)-1;
+            let y1 = 1/(m/2)*j-(1);
+            let y2 = 1/(m/2)*(j+1)-1;
             addRectangle(
                 x1, y1, x2, y2,
                 r, g, b, a,
@@ -98,7 +102,13 @@ draw = function() {
             );
         }
     }
+    currentProgram = getProgram("neon-rectangle");
+    gl.useProgram(currentProgram);
     drawRectangles();
+    currentProgram = getProgram("smooth-dots");
+    gl.useProgram(currentProgram);
+    drawAlligatorQuiet(currentProgram);
+    drawCount++;
     if (exporting && frameCount < maxFrames) {
         frameExport();
     }
@@ -291,4 +301,25 @@ function drawRectangles() {
     gl.uniform2f(resolutionUniformLocation, cnvs.width, cnvs.height);
     // Draw
     gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+}
+
+drawAlligatorQuiet = function(selectedProgram) {
+    vertices = [];
+    num=0;
+    let al = 0.3;
+    for (let i = 0; i < 1500; i++) {
+        let x = Math.cos(i - drawCount) * i * 0.001;
+        let y = Math.sin(i - drawCount) * i * 0.001;
+        vertices.push(x * (9 / 16), y);
+        num++;
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, dotsVBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    // Get the attribute location
+    var coord = gl.getAttribLocation(selectedProgram, "coordinates");
+    // Point an attribute to the currently bound VBO
+    gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
+    // Enable the attribute
+    gl.enableVertexAttribArray(coord);
+    gl.drawArrays(gl.POINTS, 0, num);
 }
