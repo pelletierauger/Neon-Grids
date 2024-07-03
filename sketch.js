@@ -10,6 +10,7 @@ let indices = [];
 let amountOfLines = 0;
 let drawCount = 0;
 let dotsVBuf;
+let termVBuf, dotsCBuf;
 
 function setup() {
     socket = io.connect('http://localhost:8080');
@@ -30,6 +31,8 @@ function setup() {
     // Set the view port
     gl.viewport(0, 0, cnvs.width, cnvs.height);
     dotsVBuf = gl.createBuffer();
+    dotsCBuf = gl.createBuffer();
+    termVBuf = gl.createBuffer();
     shadersReadyToInitiate = true;
     initializeShaders();
     setTimeout(function() {
@@ -88,7 +91,7 @@ draw = function() {
     let w = 16/9;
     let r = 1, g = 0, b = 0.25, a = 1;
     let radius = 0.15, border = 0.15;
-    let n = 6, m = 3;
+    let n = 1, m = 3;
     for (let i = 0; i < n; i++) {
         for (let j = 0; j < m; j++) {
             let x1 = w/(n/2)*i-(w);
@@ -108,6 +111,9 @@ draw = function() {
     currentProgram = getProgram("smooth-dots");
     gl.useProgram(currentProgram);
     drawAlligatorQuiet(currentProgram);
+    currentProgram = getProgram("rounded-square");
+    gl.useProgram(currentProgram);
+    drawText(currentProgram);
     drawCount++;
     if (exporting && frameCount < maxFrames) {
         frameExport();
@@ -313,6 +319,19 @@ drawAlligatorQuiet = function(selectedProgram) {
         vertices.push(x * (9 / 16), y);
         num++;
     }
+    sides = 3;
+    inc = (Math.PI * 2) / sides;
+    st = -drawCount * 1e-2;
+    for (let i = st; i <= (Math.PI * 2.1) - inc + st; i += inc) {
+        let p0 = [Math.cos(i), Math.sin(i)];
+        let p1 = [Math.cos(i + inc), Math.sin(i + inc)];
+        for (let p = 0; p < 1; p += 0.01) {
+            let x = lerp(p0[0], p1[0], p) * 0.5;
+            let y = lerp(p0[1], p1[1], p) * 0.5;
+            vertices.push(x * (9 / 16), y);
+            num++;
+        }
+    }
     gl.bindBuffer(gl.ARRAY_BUFFER, dotsVBuf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
     // Get the attribute location
@@ -321,5 +340,47 @@ drawAlligatorQuiet = function(selectedProgram) {
     gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
     // Enable the attribute
     gl.enableVertexAttribArray(coord);
+    let timeUniformLocation = gl.getUniformLocation(selectedProgram, "time");
+    gl.uniform1f(timeUniformLocation, drawCount);
+    gl.drawArrays(gl.POINTS, 0, num);
+}
+
+drawText = function(selectedProgram) {
+    vertices = [];
+    let num = 0;
+    let colors = [];
+    let s = "La Constellation de l'Alligator";
+    // s = s.substring(0, map(Math.sin(drawCount * 2e-1), -1, 1, 0, 25));
+    twd = new Text(s);
+    for (let x = 0; x <= twd.glyphArray[0].length; x++) {
+        for (let y = 0; y < 9; y++) {
+            if (twd.glyphArray[y][x] == "1") {
+                vertices.push(x*0.02*(9/16)*(3/5)-0.72, -y*0.02+0.75, 40.0, 1.0);
+                colors.push(1, 0, 0.2);
+                num++;
+            }
+        }
+    }
+    /*======== Associating shaders to buffer objects ========*/
+    // Bind vertex buffer object
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    gl.bindBuffer(gl.ARRAY_BUFFER, termVBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    // Get the attribute location
+    var coord = gl.getAttribLocation(selectedProgram, "coordinates");
+    // Point an attribute to the currently bound VBO
+    gl.vertexAttribPointer(coord, 4, gl.FLOAT, false, 0, 0);
+    // Enable the attribute
+    gl.enableVertexAttribArray(coord);
+    gl.bindBuffer(gl.ARRAY_BUFFER, dotsCBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+    // Get the attribute location
+    var cols = gl.getAttribLocation(selectedProgram, "colors");
+    // Point an attribute to the currently bound VBO
+    gl.vertexAttribPointer(cols, 3, gl.FLOAT, false, 0, 0);
+    // Enable the attribute
+    gl.enableVertexAttribArray(cols);
+    let timeUniformLocation = gl.getUniformLocation(selectedProgram, "time");
+    gl.uniform1f(timeUniformLocation, drawCount);
     gl.drawArrays(gl.POINTS, 0, num);
 }

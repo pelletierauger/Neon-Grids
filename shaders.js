@@ -3,6 +3,7 @@ let smoothDots = new ShaderProgram("smooth-dots");
 smoothDots.vertText = `
     // beginGLSL
     attribute vec2 coordinates;
+    uniform float time;
     float roundedRectangle (vec2 uv, vec2 pos, vec2 size, float radius, float thickness) {
         float d = length(max(abs(uv - pos),size) - size) - radius;
         return smoothstep(0.66, 0.33, d / thickness * 5.0);
@@ -10,12 +11,14 @@ smoothDots.vertText = `
     void main(void) {
         gl_Position = vec4(coordinates.x, coordinates.y, 0.0, 1.0);
         gl_PointSize = 24.;
+        gl_PointSize += (sin((coordinates.y*0.02+time*2e-1))*0.5+0.5)*4.;
     }
     // endGLSL
 `;
 smoothDots.fragText = `
     // beginGLSL
     precision mediump float;
+    // uniform float time;
     float rand(vec2 co){
         return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(co.x)));
     }
@@ -117,3 +120,57 @@ neonRectangle.fragText = `
 neonRectangle.vertText = neonRectangle.vertText.replace(/[^\x00-\x7F]/g, "");
 neonRectangle.fragText = neonRectangle.fragText.replace(/[^\x00-\x7F]/g, "");
 neonRectangle.init();
+
+let roundedSquare = new ShaderProgram("rounded-square");
+
+roundedSquare.vertText = `
+    // beginGLSL
+    attribute vec4 coordinates;
+    attribute vec3 colors;
+    varying vec3 cols;
+    void main(void) {
+        gl_Position = vec4(coordinates.x, coordinates.y, 0.0, 1.0);
+        gl_PointSize = 32.;
+        cols = colors;
+    }
+    // endGLSL
+`;
+roundedSquare.fragText = `
+    // beginGLSL
+    precision mediump float;
+    uniform float time;
+    varying vec3 cols;
+    float rand(vec2 co){
+        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(co.x)));
+    }
+    float roundedRectangleFlicker (vec2 uv, vec2 pos, vec2 size, float radius, float thickness) {
+        // vec2 uv = gl_PointCoord.xy;
+        float t = time;
+        float t2 = mod(t * 0.125, 3.14159 * 2.) * 1.;
+        // t = 100. + (t * 1e-4);
+        float w = 0.15 + (sin(t2 * 1e-2 * tan(t2 * 2e-2)) + 1.0) * 0.25;
+        float d = length(max(abs(uv - pos), size * 0.5) - size * 0.5) * w - radius * 0.01;
+        float oscFull = (sin(t2) * 0.5 + 0.5) * 3.75 * 0.;
+        float oscScanning = (sin(gl_FragCoord.y * 1e-2 + t2) * 0.5 + 0.5) * 4.;
+        return smoothstep(3.99 + oscFull + oscScanning, 0.11, d * 10. / thickness * 5.0 * 0.125 * 1.5);
+        // No oscScanning anymore.
+        // return smoothstep(2.99 + oscFull + 1., 0.11, d * 10. / thickness * 5.0 * 0.125 * 1.5);
+     }
+    float roundedRectangle (vec2 uv, vec2 pos, vec2 size, float radius, float thickness) {
+        float d = length(max(abs(uv - pos), size) - size) - radius;
+        return smoothstep(0.66, 0.33, d / thickness * 5.0);
+    }
+    void main(void) {
+         float resolution = 1.0;
+         vec2 screenSize = vec2(2560.0, 1440.0) * resolution;
+         vec2 uv = gl_PointCoord.xy;
+        uv = uv * 2. - 1.;
+        float color = roundedRectangleFlicker(uv, vec2(0.0, 0.0), vec2(0.125, 0.125 * (5./3.)) * 0.5, 0.1, 0.5);
+        float rando = rand(uv * time) * 0.1;
+        gl_FragColor = vec4(cols, color - rando);
+    }
+    // endGLSL
+`;
+roundedSquare.vertText = roundedSquare.vertText.replace(/[^\x00-\x7F]/g, "");
+roundedSquare.fragText = roundedSquare.fragText.replace(/[^\x00-\x7F]/g, "");
+roundedSquare.init();
