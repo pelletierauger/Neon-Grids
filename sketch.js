@@ -83,45 +83,21 @@ draw = function() {
     resetRectangles();
     let w = 16/9;
     let r = 1, g = 0, b = 0.25, a = 1;
-    let radius = 0.3, border = 0.3;
-    let n = 3;
+    let radius = 0.15, border = 0.15;
+    let n = 6;
     for (let i = 0; i < n; i++) {
-        let x1 = w/(n/2)*i-(w);
-        let x2 = w/(n/2)*(i+1)-w;
-        let y1 = 0, y2 = 1;
-        addRectangle(
-            x1, y1, x2, y2,
-            r, g, b, a,
-            radius, border
-        );
-        addRectangle(
-            x1, y1-1, x2, y2-1,
-            r, g, b, a,
-            radius, border
-        );
-        // console.log(i);
+        for (let j = 0; j < n; j++) {
+            let x1 = w/(n/2)*i-(w);
+            let x2 = w/(n/2)*(i+1)-w;
+            let y1 = 1/(n/2)*j-(1);
+            let y2 = 1/(n/2)*(j+1)-1;
+            addRectangle(
+                x1, y1, x2, y2,
+                r, g, b, a,
+                radius, border
+            );
+        }
     }
-    //  addRectangle(
-    //     0 - 0.25, 0 - 0.25, 0.5 - 0.25, 0.5 - 0.25,
-    //     r, g, b, a,
-    //     radius, border
-    // );
-    // addRectangle(
-    //     0 + 0.5, 0 + 0.5, 0.5 + 0.5, 0.5 + 0.5,
-    //     r, g, b, a,
-    //     radius, border
-    // );
-        //  addRectangle(
-        //     0, 0.5, 0.5, 0.5,
-        //     r, g, b, a,
-        //     radius, border
-        // );
-    // let x1 = -0.75, x2 = 0.75, y1 = -0.5, y2 = 0.5;
-    // addRectangle(
-    //     x1, y1, x2, y2,
-    //     r, g, b, a,
-    //     radius, border
-    // );
     drawRectangles();
     if (exporting && frameCount < maxFrames) {
         frameExport();
