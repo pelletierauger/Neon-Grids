@@ -200,7 +200,7 @@ draw = function() {
     }
     currentProgram = getProgram("neon-rectangle");
     gl.useProgram(currentProgram);
-    drawRectangles();
+    drawRectangles(currentProgram);
     currentProgram = getProgram("smooth-dots");
     gl.useProgram(currentProgram);
     drawAlligatorQuiet(currentProgram);
@@ -341,7 +341,7 @@ function resetRectangles() {
     borders = [];
 }
 
-function drawRectangles() {
+function drawRectangles(selectedProgram) {
         var vertex_buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
@@ -370,14 +370,14 @@ function drawRectangles() {
     var borders_buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, borders_buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(borders), gl.STATIC_DRAW);
-    setShaders();
+    // setShaders();
     /* ======== Associating shaders to buffer objects =======*/
     // Bind vertex buffer object
     gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
     // Bind index buffer object
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Index_Buffer);
     // Get the attribute location
-    var coord = gl.getAttribLocation(shaderProgram, "coordinates");
+    var coord = gl.getAttribLocation(selectedProgram, "coordinates");
     // point an attribute to the currently bound VBO
     gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
     // Enable the attribute
@@ -385,7 +385,7 @@ function drawRectangles() {
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindBuffer(gl.ARRAY_BUFFER, sizes_Buffer);
     // Get the attribute location
-    var sizesAttribLocation = gl.getAttribLocation(shaderProgram, "size");
+    var sizesAttribLocation = gl.getAttribLocation(selectedProgram, "size");
     // point an attribute to the currently bound VBO
     gl.vertexAttribPointer(sizesAttribLocation, 2, gl.FLOAT, false, 0, 0);
     // Enable the attribute
@@ -393,33 +393,33 @@ function drawRectangles() {
     // bind the color buffer
     gl.bindBuffer(gl.ARRAY_BUFFER, color_buffer);
     // get the attribute location
-    var color = gl.getAttribLocation(shaderProgram, "color");
+    var color = gl.getAttribLocation(selectedProgram, "color");
     // point attribute to the volor buffer object
     gl.vertexAttribPointer(color, 4, gl.FLOAT, false, 0, 0);
     // enable the color attribute
     gl.enableVertexAttribArray(color);
     gl.bindBuffer(gl.ARRAY_BUFFER, uv_buffer);
-    var uvAttribLocation = gl.getAttribLocation(shaderProgram, "uv");
+    var uvAttribLocation = gl.getAttribLocation(selectedProgram, "uv");
     // point attribute to the volor buffer object
     gl.vertexAttribPointer(uvAttribLocation, 2, gl.FLOAT, false, 0, 0);
     // enable the color attribute
     gl.enableVertexAttribArray(uvAttribLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, radii_buffer);    
-    var radiusAttribLocation = gl.getAttribLocation(shaderProgram, "radius");
+    var radiusAttribLocation = gl.getAttribLocation(selectedProgram, "radius");
     // point attribute to the volor buffer object
     gl.vertexAttribPointer(radiusAttribLocation, 1, gl.FLOAT, false, 0, 0);
     // enable the color attribute
     gl.enableVertexAttribArray(radiusAttribLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, borders_buffer);    
-    var borderAttribLocation = gl.getAttribLocation(shaderProgram, "border");
+    var borderAttribLocation = gl.getAttribLocation(selectedProgram, "border");
     // point attribute to the volor buffer object
     gl.vertexAttribPointer(borderAttribLocation, 1, gl.FLOAT, false, 0, 0);
     // enable the color attribute
     gl.enableVertexAttribArray(borderAttribLocation);
     // Managing uniforms
-    timeUniformLocation = gl.getUniformLocation(shaderProgram, "time");
+    timeUniformLocation = gl.getUniformLocation(selectedProgram, "time");
     gl.uniform1f(timeUniformLocation, frameCount);
-    resolutionUniformLocation = gl.getUniformLocation(shaderProgram, "resolution");
+    resolutionUniformLocation = gl.getUniformLocation(selectedProgram, "resolution");
     gl.uniform2f(resolutionUniformLocation, cnvs.width, cnvs.height);
     // Draw
     gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
