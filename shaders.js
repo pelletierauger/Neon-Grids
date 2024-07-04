@@ -124,9 +124,9 @@ neonRectangle.vertText = neonRectangle.vertText.replace(/[^\x00-\x7F]/g, "");
 neonRectangle.fragText = neonRectangle.fragText.replace(/[^\x00-\x7F]/g, "");
 neonRectangle.init();
 
-let roundedSquare = new ShaderProgram("rounded-square");
+let roundedSquare2 = new ShaderProgram("rounded-square-2");
 
-roundedSquare.vertText = `
+roundedSquare2.vertText = `
     // beginGLSL
     attribute vec4 coordinates;
     attribute vec3 colors;
@@ -138,7 +138,7 @@ roundedSquare.vertText = `
     }
     // endGLSL
 `;
-roundedSquare.fragText = `
+roundedSquare2.fragText = `
     // beginGLSL
     precision mediump float;
     uniform float time;
@@ -170,10 +170,50 @@ roundedSquare.fragText = `
         uv = uv * 2. - 1.;
         float color = roundedRectangleFlicker(uv, vec2(0.0, 0.0), vec2(0.125, 0.125 * (5./3.)) * 0.5, 0.1, 0.5);
         float rando = rand(uv * time) * 0.1;
-        gl_FragColor = vec4(cols, color - rando);
+        gl_FragColor = vec4(vec3(1., 0., 0.), color - rando);
     }
     // endGLSL
 `;
-roundedSquare.vertText = roundedSquare.vertText.replace(/[^\x00-\x7F]/g, "");
-roundedSquare.fragText = roundedSquare.fragText.replace(/[^\x00-\x7F]/g, "");
-roundedSquare.init();
+roundedSquare2.vertText = roundedSquare2.vertText.replace(/[^\x00-\x7F]/g, "");
+roundedSquare2.fragText = roundedSquare2.fragText.replace(/[^\x00-\x7F]/g, "");
+roundedSquare2.init();
+
+let textureShader = new ShaderProgram("textu");
+
+// Bloody dawn over the mountains
+textureShader.vertText = `
+    // beginGLSL
+attribute vec3 a_position;
+attribute vec2 a_texcoord;
+varying vec2 v_texcoord;
+void main() {
+  // Multiply the position by the matrix.
+  vec4 positionVec4 = vec4(a_position, 1.0);
+  // gl_Position = a_position;
+  positionVec4.xy = positionVec4.xy * 2.0 - 1.0;
+  gl_Position = positionVec4;
+  // Pass the texcoord to the fragment shader.
+  v_texcoord = a_texcoord;
+}
+// endGLSL
+`;
+textureShader.fragText = `
+// beginGLSL
+precision mediump float;
+// Passed in from the vertex shader.
+uniform float time;
+varying vec2 v_texcoord;
+// The texture.
+uniform sampler2D u_texture;
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(time)));
+}
+${blendingMath}
+void main() {
+   gl_FragColor = texture2D(u_texture, v_texcoord);
+}
+// endGLSL
+`;
+textureShader.vertText = textureShader.vertText.replace(/[^\x00-\x7F]/g, "");
+textureShader.fragText = textureShader.fragText.replace(/[^\x00-\x7F]/g, "");
+textureShader.init();

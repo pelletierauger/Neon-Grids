@@ -1,7 +1,12 @@
-let looping = true;
+let looping = false;
+let grimoire = false;
+let tabsLoaded = false;
+let gr;
+let mode = 0;
 let keysActive = true;
 let socket, cnvs, ctx, canvasDOM;
 let fileName = "./frames/sketch";
+let JSONs = [];
 let maxFrames = 20;
 let gl, shaderProgram;
 let vertices = [];
@@ -11,6 +16,82 @@ let amountOfLines = 0;
 let drawCount = 0;
 let dotsVBuf;
 let termVBuf, dotsCBuf;
+const openSimplex = openSimplexNoise(10);
+let fmouse = [0, 0];
+let pmouse = [0, 0];
+let smouse = [0, 0];
+let resolutionScalar = 0.5;
+let resolutionBG;
+
+
+let texture, texture2, framebuf, framebuf2;
+// ------------------------------------------------------------
+// Grimoire Animate
+// ------------------------------------------------------------
+
+var stop = false;
+var fps, fpsInterval, startTime, now, then, elapsed;
+var animationStart;
+var framesRendered = 0;
+var framesOfASecond = 0;
+var secondStart, secondFrames;
+var fps = 24;
+var envirLooping = false;
+
+startAnimating = function() {
+    fpsInterval = 1000 / fps;
+    then = Date.now();
+    animationStart = Date.now();
+    secondStart = Date.now();
+    startTime = then;
+    framesRendered = 0;
+    envirLooping = true;
+    animate();
+}
+
+function queryFrameRate() {
+    let timeElapsed = Date.now() - animationStart;
+    let seconds = timeElapsed / 1000;
+    logJavaScriptConsole(framesRendered / seconds);
+    // logJavaScriptConsole(timeElapsed);
+}
+
+// the animation loop calculates time elapsed since the last loop
+// and only draws if your specified fps interval is achieved
+
+function animate() {
+
+    // request another frame
+    if (envirLooping) {
+
+        requestAnimationFrame(animate);
+
+
+        // calc elapsed time since last loop
+
+        now = Date.now();
+        elapsed = now - then;
+
+        // if enough time has elapsed, draw the next frame
+
+        if (elapsed > fpsInterval) {
+
+            // Get ready for next frame by setting then=now, but also adjust for your
+            // specified fpsInterval not being a multiple of RAF's interval (16.7ms)
+            then = now - (elapsed % fpsInterval);
+            // Put your drawing code here
+            draw();
+            framesRendered++;
+            framesOfASecond++;
+            if (framesOfASecond == fps) {
+                secondFrames = fps / ((Date.now() - secondStart) * 0.001);
+                // logJavaScriptConsole(secondFrames);
+                framesOfASecond = 0;
+                secondStart = Date.now();
+            }
+        }
+    }
+}
 
 function setup() {
     socket = io.connect('http://localhost:8080');
@@ -35,6 +116,10 @@ function setup() {
     termVBuf = gl.createBuffer();
     shadersReadyToInitiate = true;
     initializeShaders();
+        texture = createTexture();
+    framebuf = createFrameBuffer(texture);
+    texture2 = createTexture();
+    framebuf2 = createFrameBuffer(texture2);
     setTimeout(function() {
         scdConsoleArea.setAttribute("style", "display:block;");
         scdArea.style.display = "none";
@@ -58,25 +143,31 @@ function setup() {
             jsConsoleArea.style.display = "none";
         }, false);
         keysControl.addEventListener("mouseleave", function(event) {
-            document.body.style.cursor = "default";
-            document.body.style.backgroundColor = "#1C1C1C";
-            appControl.setAttribute("style", "display:block;");
-            let tabs = document.querySelector("#file-tabs");
-            tabs.setAttribute("style", "display:block;");
-            if (displayMode === "both") {
-                scdArea.style.display = "block";
-                scdConsoleArea.style.display = "block";
-                jsArea.style.display = "block";
-                jsConsoleArea.style.display = "block";
-            } else if (displayMode == "scd") {
-                scdArea.style.display = "block";
-                scdConsoleArea.style.display = "block";
-            } else if (displayMode == "js") {
-                jsArea.style.display = "block";
-                jsConsoleArea.style.display = "block";
-            }
-            cinemaMode = false;
-            clearSelection();
+            if (!grimoire) {
+                document.body.style.cursor = "default";
+                document.body.style.backgroundColor = "#1C1C1C";
+                appControl.setAttribute("style", "display:block;");
+                let tabs = document.querySelector("#file-tabs");
+                tabs.setAttribute("style", "display:block;");
+                // let slider = document.querySelector("#timeline-slider");
+                // slider.setAttribute("style", "display:block;");
+                // slider.style.display = "block";
+                // canvasDOM.style.bottom = null;
+                if (displayMode === "both") {
+                    scdArea.style.display = "block";
+                    scdConsoleArea.style.display = "block";
+                    jsArea.style.display = "block";
+                    jsConsoleArea.style.display = "block";
+                } else if (displayMode == "scd") {
+                    scdArea.style.display = "block";
+                    scdConsoleArea.style.display = "block";
+                } else if (displayMode == "js") {
+                    jsArea.style.display = "block";
+                    jsConsoleArea.style.display = "block";
+                }
+                cinemaMode = false;
+                clearSelection();
+            }   
         }, false);
     }, 1);
     frameRate(30);
@@ -86,6 +177,8 @@ function setup() {
 }
 
 draw = function() {
+    bindFrameBuffer(texture, framebuf);
+    gl.viewport(0, 0, cnvs.width, cnvs.height);
     gl.clear(gl.COLOR_BUFFER_BIT);
     resetRectangles();
     let w = 16/9;
@@ -111,9 +204,16 @@ draw = function() {
     currentProgram = getProgram("smooth-dots");
     gl.useProgram(currentProgram);
     drawAlligatorQuiet(currentProgram);
-    currentProgram = getProgram("rounded-square");
+    currentProgram = getProgram("rounded-square-2");
     gl.useProgram(currentProgram);
     drawText(currentProgram);
+    // ------------------------------
+    currentProgram = getProgram("rounded-square");
+    time = gl.getUniformLocation(currentProgram, "time"); 
+    disturb = gl.getUniformLocation(currentProgram, "disturb"); 
+    gl.useProgram(currentProgram);
+    drawTerminal(currentProgram);
+printTexture();
     drawCount++;
     if (exporting && frameCount < maxFrames) {
         frameExport();
@@ -162,16 +262,32 @@ function keyPressed() {
                 looping = true;
             }
         }
-        if (key == 'p' || key == 'P') {
-            frameExport();
-        }
-        if (key == 'r' || key == 'R') {
-            window.location.reload();
-        }
-        if (key == 'm' || key == 'M') {
-            redraw();
-        }
+        // if (key == 'p' || key == 'P') {
+        //     frameExport();
+        // }
+        // if (key == 'r' || key == 'R') {
+        //     window.location.reload();
+        // }
+        // if (key == 'm' || key == 'M') {
+        //     redraw();
+        // }
     }
+}
+
+tl = function(d = 0) {
+    setTimeout(function() {
+                if (envirLooping) {
+                // noLoop();
+                envirLooping = false;
+            } else {
+                envirLooping = true;
+                startAnimating();
+            }
+    }, d * 1e3);
+};
+
+gr = function() {
+    grimoire = !grimoire;
 }
 
 function addRectangle(    
@@ -313,6 +429,42 @@ drawAlligatorQuiet = function(selectedProgram) {
     vertices = [];
     num=0;
     let al = 0.3;
+    for (let i = 0; i < 2500; i++) {
+        let x = Math.cos(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.001;
+        let y = Math.sin(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.001;
+        vertices.push(x * (9 / 16), y);
+        num++;
+    }
+    sides = 3;
+    inc = (Math.PI * 2) / sides;
+    st = -drawCount * 1e-2;
+    for (let i = st; i <= (Math.PI * 2.1) - inc + st; i += inc) {
+        let p0 = [Math.cos(i), Math.sin(i)];
+        let p1 = [Math.cos(i + inc), Math.sin(i + inc)];
+        for (let p = 0; p < 1; p += 0.01) {
+            let x = lerp(p0[0], p1[0], p) * 0.5;
+            let y = lerp(p0[1], p1[1], p) * 0.5;
+            vertices.push(x * (9 / 16), y);
+            num++;
+        }
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, dotsVBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    // Get the attribute location
+    var coord = gl.getAttribLocation(selectedProgram, "coordinates");
+    // Point an attribute to the currently bound VBO
+    gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
+    // Enable the attribute
+    gl.enableVertexAttribArray(coord);
+    let timeUniformLocation = gl.getUniformLocation(selectedProgram, "time");
+    gl.uniform1f(timeUniformLocation, drawCount);
+    gl.drawArrays(gl.POINTS, 0, num);
+}
+
+drawAlligatorQuiet = function(selectedProgram) {
+    vertices = [];
+    num=0;
+    let al = 0.3;
     for (let i = 0; i < 1500; i++) {
         let x = Math.cos(i - drawCount) * i * 0.001;
         let y = Math.sin(i - drawCount) * i * 0.001;
@@ -384,3 +536,85 @@ drawText = function(selectedProgram) {
     gl.uniform1f(timeUniformLocation, drawCount);
     gl.drawArrays(gl.POINTS, 0, num);
 }
+
+setTabs = function() {
+
+};
+
+printTexture = function() {
+       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, cnvs.width, cnvs.height);
+    // 
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    // 
+    gl.clearColor(0, 0, 0, 1); // clear to white
+    // 
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // 
+    var textureShader = getProgram("textu");
+    gl.useProgram(textureShader);
+    // 
+    aspect = cnvs.width / cnvs.height;
+    let vertices = new Float32Array([-1, 1, 1, 1, 1, -1, // Triangle 1
+        -1, 1, 1, -1, -1, -1 // Triangle 2
+    ]);
+    vbuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+    itemSize = 2;
+    numItems = vertices.length / itemSize;
+    let positionAttribLocation = gl.getAttribLocation(textureShader, "a_position");
+    gl.enableVertexAttribArray(positionAttribLocation);
+    gl.vertexAttribPointer(positionAttribLocation, itemSize, gl.FLOAT, false, 0, 0);
+    // 
+    var textureLocation = gl.getUniformLocation(textureShader, "u_texture");
+    gl.uniform1i(textureLocation, 0);
+    var timeLocation = gl.getUniformLocation(textureShader, "time");
+    gl.uniform1f(timeLocation, drawCount * 0.01);
+    // 
+    var scalar = gl.getUniformLocation(textureShader, "resolution");
+    gl.uniform1f(scalar, resolutionScalar);
+    // 
+    var texcoordLocation = gl.getAttribLocation(textureShader, "a_texcoord");
+    gl.enableVertexAttribArray(texcoordLocation);
+    // Tell the position attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+    var size = 2; // 2 components per iteration
+    var type = gl.FLOAT; // the data is 32bit floats
+    var normalize = false; // don't normalize the data
+    var stride = 0; // 0 = move forward size * sizeof(type) each iteration to get the next position
+    var offset = 0; // start at the beginning of the buffer
+    gl.vertexAttribPointer(texcoordLocation, size, type, normalize, stride, offset);
+    gl.drawArrays(gl.TRIANGLES, 0, numItems);
+};
+
+keyDown = function(e) {
+    if (keysActive) {
+        if (ge.recording) {
+            ge.recordingSession.push([drawCount, {
+                name: "keyDown",
+                key: e.key,
+                keyCode: e.keyCode,
+                altKey: e.altKey,
+                metaKey: e.metaKey,
+                shiftKey: e.shiftKey
+            }]);
+        }
+        // console.log(event.keyCode);
+        if (e.keyCode == 27 && ge.activeTab !== null) {
+            mode = (mode + 1) % 3;
+        }
+        if (mode == 0) {
+                if (vtActive) {
+                    vt.update(e);
+                    // ljs(event.keyCode);
+                }
+            updateDrawing(e);
+        } else if (mode == 1) {
+            ge.update(e);
+        } else if (mode == 2) {
+            paintingKeys(e);
+        }
+    }
+}
+
+document.onkeydown = keyDown; 
