@@ -184,7 +184,7 @@ draw = function() {
     let w = 16/9;
     let r = 1, g = 0, b = 0.25, a = 1;
     let radius = 0.15, border = 0.15;
-    let n = 1, m = 3;
+    let n = 1, m = 1;
     for (let i = 0; i < n; i++) {
         for (let j = 0; j < m; j++) {
             let x1 = w/(n/2)*i-(w);
@@ -251,28 +251,28 @@ function rotate(p, a) {
 //     vertices[i+1] = newPos[1];
 // }
 
-function keyPressed() {
-    if (keysActive) {
-        if (keyCode === 32) {
-            if (looping) {
-                noLoop();
-                looping = false;
-            } else {
-                loop();
-                looping = true;
-            }
-        }
-        // if (key == 'p' || key == 'P') {
-        //     frameExport();
-        // }
-        // if (key == 'r' || key == 'R') {
-        //     window.location.reload();
-        // }
-        // if (key == 'm' || key == 'M') {
-        //     redraw();
-        // }
-    }
-}
+// function keyPressed() {
+//     if (keysActive) {
+//         if (keyCode === 32) {
+//             if (looping) {
+//                 noLoop();
+//                 looping = false;
+//             } else {
+//                 loop();
+//                 looping = true;
+//             }
+//         }
+//         // if (key == 'p' || key == 'P') {
+//         //     frameExport();
+//         // }
+//         // if (key == 'r' || key == 'R') {
+//         //     window.location.reload();
+//         // }
+//         // if (key == 'm' || key == 'M') {
+//         //     redraw();
+//         // }
+//     }
+// }
 
 tl = function(d = 0) {
     setTimeout(function() {
@@ -418,7 +418,7 @@ function drawRectangles(selectedProgram) {
     gl.enableVertexAttribArray(borderAttribLocation);
     // Managing uniforms
     timeUniformLocation = gl.getUniformLocation(selectedProgram, "time");
-    gl.uniform1f(timeUniformLocation, frameCount);
+    gl.uniform1f(timeUniformLocation, drawCount);
     resolutionUniformLocation = gl.getUniformLocation(selectedProgram, "resolution");
     gl.uniform2f(resolutionUniformLocation, cnvs.width, cnvs.height);
     // Draw
