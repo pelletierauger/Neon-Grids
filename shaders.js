@@ -107,6 +107,10 @@ neonRectangle.fragText = `
         // col = ((col+b) * -1. + b) * (1./(b*0.5));
         // col = min(col * -1. * (1. / (b * 0.5)), 1.0);
         // col = smoothstep(0., 1., col);
+        // --------------------------------------------------------
+        // to make the neonRectangle fluctuate
+        // col = mix(pow(col, 20.), col, sin(time*0.1)*0.5+0.5)*(sin(time*0.1)*0.5+0.5);
+        // --------------------------------------------------------
         float highlight = pow(max(0., col), 4.) * 0.5;
         col = col * 0.75 + highlight;
         // col = smoothstep(0., 1., col);
