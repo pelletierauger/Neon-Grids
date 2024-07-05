@@ -183,8 +183,8 @@ draw = function() {
     resetRectangles();
     let w = 16/9;
     let r = 1, g = 0, b = 0.25, a = 1;
-    let radius = 0.15, border = 0.15;
-    let n = 1, m = 1;
+    let radius = 0.3, border = 0.3;
+    let n =1, m = 1;
     for (let i = 0; i < n; i++) {
         for (let j = 0; j < m; j++) {
             let x1 = w/(n/2)*i-(w);
@@ -204,16 +204,16 @@ draw = function() {
     currentProgram = getProgram("smooth-dots");
     gl.useProgram(currentProgram);
     drawAlligatorQuiet(currentProgram);
-    currentProgram = getProgram("rounded-square-2");
-    gl.useProgram(currentProgram);
-    drawText(currentProgram);
+    // currentProgram = getProgram("rounded-square-2");
+    // gl.useProgram(currentProgram);
+    // drawText(currentProgram);
     // ------------------------------
     currentProgram = getProgram("rounded-square");
     time = gl.getUniformLocation(currentProgram, "time"); 
     disturb = gl.getUniformLocation(currentProgram, "disturb"); 
     gl.useProgram(currentProgram);
-    drawTerminal(currentProgram);
-printTexture();
+    // drawTerminal(currentProgram);
+    printTexture();
     drawCount++;
     if (exporting && frameCount < maxFrames) {
         frameExport();
@@ -430,12 +430,13 @@ drawAlligatorQuiet = function(selectedProgram) {
     num=0;
     let al = 0.3;
     for (let i = 0; i < 2500; i++) {
-        let x = Math.cos(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.001;
-        let y = Math.sin(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.001;
+        let m = map(i, 0, 2500, 15, 1);
+        let x = Math.cos(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.00009 * m;
+        let y = Math.sin(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.00009 * m;
         vertices.push(x * (9 / 16), y);
         num++;
     }
-    sides = 3;
+    sides = 7;
     inc = (Math.PI * 2) / sides;
     st = -drawCount * 1e-2;
     for (let i = st; i <= (Math.PI * 2.1) - inc + st; i += inc) {
@@ -465,13 +466,16 @@ drawAlligatorQuiet = function(selectedProgram) {
     vertices = [];
     num=0;
     let al = 0.3;
-    for (let i = 0; i < 1500; i++) {
-        let x = Math.cos(i - drawCount) * i * 0.001;
-        let y = Math.sin(i - drawCount) * i * 0.001;
-        vertices.push(x * (9 / 16), y);
-        num++;
+    for (let i = 0; i < 2500; i++) {
+        let m = map(i, 0, 2500, 6, 1);
+        let x = Math.cos(i - drawCount + i * 1e-3) * i * 0.00025 * m;
+        let y = Math.sin(i - drawCount + i * 1e-3) * i * 0.00025 * m;
+        if (Math.abs(y) < 0.85) {
+            vertices.push(x * (9 / 16), y);
+            num++;
+        }
     }
-    sides = 3;
+    sides = 7;
     inc = (Math.PI * 2) / sides;
     st = -drawCount * 1e-2;
     for (let i = st; i <= (Math.PI * 2.1) - inc + st; i += inc) {
@@ -480,8 +484,8 @@ drawAlligatorQuiet = function(selectedProgram) {
         for (let p = 0; p < 1; p += 0.01) {
             let x = lerp(p0[0], p1[0], p) * 0.5;
             let y = lerp(p0[1], p1[1], p) * 0.5;
-            vertices.push(x * (9 / 16), y);
-            num++;
+            // vertices.push(x * (9 / 16), y);
+            // num++;
         }
     }
     gl.bindBuffer(gl.ARRAY_BUFFER, dotsVBuf);
