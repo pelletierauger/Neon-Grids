@@ -176,6 +176,19 @@ function setup() {
     }
 }
 
+buildSeed = function() {
+    let layer0 = [0, 1+Math.floor(Math.random()*4)]
+    let layer1 = [];
+        let layer2 = [];
+    for (let i = 0 ; i < layer0[1]; i++) {
+        layer1.push(1+Math.floor(Math.random()*8));
+        layer2.push(1+Math.floor(Math.random()*3));
+    }
+    return [layer0, layer1, layer2];
+};
+
+seed = buildSeed();
+
 draw = function() {
     bindFrameBuffer(texture, framebuf);
     gl.viewport(0, 0, cnvs.width, cnvs.height);
@@ -183,27 +196,48 @@ draw = function() {
     resetRectangles();
     let w = 16/9;
     let r = 1, g = 0, b = 0.25, a = 1;
-    let radius = 0.3, border = 0.3;
+    let radius = 0.075, border = 0.075;
     let n =1, m = 1;
-    for (let i = 0; i < n; i++) {
-        for (let j = 0; j < m; j++) {
-            let x1 = w/(n/2)*i-(w);
-            let x2 = w/(n/2)*(i+1)-w;
-            let y1 = 1/(m/2)*j-(1);
-            let y2 = 1/(m/2)*(j+1)-1;
-            addRectangle(
-                x1, y1, x2, y2,
-                r, g, b, a,
-                radius, border
-            );
+    // let seed = [
+    //     [0, 3],
+    //     [3, 2, 3, 2], 
+    //     [2, 1, 2, 1]
+    // ];
+    // let seed;
+    if (drawCount % 48 == 0) {
+        seed = buildSeed();
+    }
+    let ratio = 16/9;
+    for (let i = 0; i < seed[0][1]; i++) {
+        let y1 = (1 / seed[0][1]) * i;
+        for (let j = 0; j < seed[1][i]; j++) {
+            let x1 = (ratio / seed[1][i]) * j;
+            let x2 = (ratio / seed[1][i]) * (j+1);
+            for (let k = 0; k < seed[2][i]; k++) {
+                let yy1, yy2;
+                yy1 = y1 + ((1 / seed[0][1] / seed[2][i]) * k);
+                yy2 = y1 + ((1 / seed[0][1] / seed[2][i]) * (k+1));
+                addRectangle(
+                    (x1 - (ratio / 2)) * 2, (yy1 - 1 / 2) * 2,
+                    (x2 - (ratio / 2)) * 2, (yy2 - 1 / 2) * 2,
+                    r, g, b, a,
+                    radius, border
+                );
+            }
         }
     }
+            
+            // addRectangle(
+            //     x1, y1, x2, y2,
+            //     r, g, b, a,
+            //     radius, border
+            // );
     currentProgram = getProgram("neon-rectangle");
     gl.useProgram(currentProgram);
     drawRectangles(currentProgram);
     currentProgram = getProgram("smooth-dots");
     gl.useProgram(currentProgram);
-    drawAlligatorQuiet(currentProgram);
+    drawAlligatorQuiet(currentProgram, seed);
     // currentProgram = getProgram("rounded-square-2");
     // gl.useProgram(currentProgram);
     // drawText(currentProgram);
@@ -430,11 +464,13 @@ drawAlligatorQuiet = function(selectedProgram) {
     num=0;
     let al = 0.3;
     for (let i = 0; i < 2500; i++) {
-        let m = map(i, 0, 2500, 15, 1);
-        let x = Math.cos(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.00009 * m;
-        let y = Math.sin(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.00009 * m;
-        vertices.push(x * (9 / 16), y);
-        num++;
+        let m = map(i, 0, 2500, 6, 1);
+        let x = Math.cos(i - drawCount) * i * 0.0015;
+        let y = Math.sin(i - drawCount) * i * 0.0015;
+        if (Math.abs(y) < 0.85) {
+            vertices.push(x * (9 / 16), y);
+            num++;
+        }
     }
     sides = 7;
     inc = (Math.PI * 2) / sides;
@@ -445,8 +481,8 @@ drawAlligatorQuiet = function(selectedProgram) {
         for (let p = 0; p < 1; p += 0.01) {
             let x = lerp(p0[0], p1[0], p) * 0.5;
             let y = lerp(p0[1], p1[1], p) * 0.5;
-            vertices.push(x * (9 / 16), y);
-            num++;
+            // vertices.push(x * (9 / 16), y);
+            // num++;
         }
     }
     gl.bindBuffer(gl.ARRAY_BUFFER, dotsVBuf);
@@ -462,18 +498,58 @@ drawAlligatorQuiet = function(selectedProgram) {
     gl.drawArrays(gl.POINTS, 0, num);
 }
 
-drawAlligatorQuiet = function(selectedProgram) {
+drawAlligatorQuiet = function(selectedProgram, seed) {
     vertices = [];
     num=0;
+    //     let seed = [
+    //     [0, 3],
+    //     [8, 6, 2], 
+    //     [3, 2, 2]
+    // ];
+    let ratio = 16/9;
+    let par = 0;
+    for (let i = 0; i < seed[0][1]; i++) {
+        let y1 = (1 / seed[0][1]) * i;
+        for (let j = 0; j < seed[1][i]; j++) {
+            let x1 = (ratio / seed[1][i]) * j;
+            let x2 = (ratio / seed[1][i]) * (j+1);
+            for (let k = 0; k < seed[2][i]; k++) {
+                let yy1, yy2;
+                yy1 = y1 + ((1 / seed[0][1] / seed[2][i]) * k);
+                yy2 = y1 + ((1 / seed[0][1] / seed[2][i]) * (k+1));
+                let limitX = [(x1 - (ratio / 2)) * 2, (x2 - (ratio / 2)) * 2];
+                let limitY = [(yy1 - 1 / 2) * 2, (yy2 - 1 / 2) * 2];
+                // console.log(limitY);
+                let size = Math.max(limitY[1]-limitY[0],limitX[1]-limitX[0]);
+                // console.log(size);
+                let m = ((i + j + k) % 2)*2-1;
+                
+                for (let l = 0; l < 1250 * size; l++) {
+                    let x = Math.cos(l*((k+10)*1e-4*l)+((j+10)*1e-1*l)+par+drawCount*1e-2*m) * l * 0.002 + (lerp(limitX[0], limitX[1], 0.5));
+                    let y = Math.sin(l*((k+10)*1e-4*l)+((j+10)*1e-1*l)+par+drawCount*1e-2*m) * l * 0.002 + (lerp(limitY[0], limitY[1], 0.5));
+                    par += (i + j + k);
+                    let p = -0.04;
+                    if (x > (limitX[0]-p) && x < (limitX[1]+p) && y > (limitY[0]-p) && y < (limitY[1]+p)) {
+                        vertices.push(x * (9 / 16), y);
+                        num++;
+                    }
+                }
+                // addRectangle(
+                //     (x1 - (ratio / 2)) * 2, (yy1 - 1 / 2) * 2,
+                //     (x2 - (ratio / 2)) * 2, (yy2 - 1 / 2) * 2,
+                //     r, g, b, a,
+                //     radius, border
+                // );
+            }
+        }
+    }
     let al = 0.3;
     for (let i = 0; i < 2500; i++) {
-        let m = map(i, 0, 2500, 6, 1);
-        let x = Math.cos(i - drawCount + i * 1e-3) * i * 0.00025 * m;
-        let y = Math.sin(i - drawCount + i * 1e-3) * i * 0.00025 * m;
-        if (Math.abs(y) < 0.85) {
-            vertices.push(x * (9 / 16), y);
-            num++;
-        }
+        let m = map(i, 0, 2500, 15, 1);
+        let x = Math.cos(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.00009 * m;
+        let y = Math.sin(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.00009 * m;
+        // vertices.push(x * (9 / 16), y);
+        // num++;
     }
     sides = 7;
     inc = (Math.PI * 2) / sides;

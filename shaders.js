@@ -94,6 +94,82 @@ smoothDots.init();
 
 let neonRectangle = new ShaderProgram("neon-rectangle");
 
+// Concentric rings
+neonRectangle.vertText = `
+    // beginGLSL
+        attribute vec2 coordinates;
+        attribute vec4 color;
+        attribute vec2 size;
+        attribute vec2 uv;
+        attribute float radius;
+        attribute float border;
+        uniform vec2 resolution;
+        varying vec4 vColor;
+        varying vec2 wh;
+        varying vec2 uvs;
+        varying float vradius;
+        varying float vborder;
+        void main(void) {
+            gl_Position = vec4(coordinates, 0.0, 1.0);
+            gl_Position.x = gl_Position.x * (resolution.y / resolution.x);
+            vColor = color;
+            wh = size;
+            uvs = uv;
+            vradius = radius;
+            vborder = border;
+        }
+    // endGLSL
+`;
+neonRectangle.fragText = `
+    // beginGLSL
+    precision mediump float;
+    uniform float time;
+    varying vec4 vColor;
+    varying vec2 wh;
+    varying vec2 uvs;
+    varying float vradius;
+    varying float vborder;
+    float rand(vec2 co){
+        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(co.x)));
+    }
+    float roundedRectangle (vec2 uv, vec2 pos, vec2 size, float radius, float thickness) {
+        float d = length(max(abs(uv - pos),size) - size) - radius;
+        return smoothstep(0.66, 0.33, d / thickness);
+    }
+    float map(float value, float min1, float max1, float min2, float max2) {
+        return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+    }
+    void main(void) {
+        vec2 pos = gl_FragCoord.xy;
+        vec2 uv = uvs;
+        uv *= wh;
+        float noise = rand(uv + vec2(cos(time), sin(time))) * 0.1;
+            uv -= wh * 0.5;
+                float radius = vradius * 0.25;
+        vec2 size = wh * 0.5 - radius;
+        float col = 1. - (sin(length(uv)*5.-time*0.5e-1)*0.5+0.5);
+        float halo = 1. - (sin(length(uv)*5.-time*0.5e-1)*0.5+0.5);
+        float cutoff = 0.5;
+        // cutoff = 0.5 + (sin(atan(uv.y, uv.x)*5.)*0.5+0.5);
+        // cutoff = 0.5 + (sin(atan(uv.y, uv.x)*15.)*0.5+0.5) * 0.1;
+        float sharpness = 10.0;
+        col = ((abs(col - cutoff) * -1.) * sharpness + cutoff) * (1./cutoff);
+        col = max(0.0, col);
+        halo = ((abs(halo - cutoff) * -1.) * (sharpness*0.25) + cutoff) * (1./cutoff);
+        halo = max(0.0, halo);
+        // halo = pow(halo, 1.5);
+        col += halo - (halo * col);
+        col = mix(pow(col, 20.), col, sin(time*0.1+pos.y*1e-2)*0.5+0.5)*(sin(time*0.1+pos.y*1e-2)*0.5+0.5);
+        // col = halo;
+        // col = smoothstep(0., 1., col);
+        gl_FragColor = vec4(vec3(col, pow(col, 3.)*0.5, pow(col, 3.)*0.25), (1.0 - noise));
+    }
+    // endGLSL
+`;
+neonRectangle.vertText = neonRectangle.vertText.replace(/[^\x00-\x7F]/g, "");
+neonRectangle.fragText = neonRectangle.fragText.replace(/[^\x00-\x7F]/g, "");
+neonRectangle.init();
+
 neonRectangle.vertText = `
     // beginGLSL
         attribute vec2 coordinates;
