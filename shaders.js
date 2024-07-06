@@ -59,7 +59,7 @@ smoothDots.vertText = `
     }
     void main(void) {
         gl_Position = vec4(coordinates.x, coordinates.y, 0.0, 1.0);
-        gl_PointSize = 24.;
+        gl_PointSize = 15.;
         gl_PointSize += (sin((coordinates.y*0.02+time*2e-1))*0.5+0.5)*4.;
     }
     // endGLSL

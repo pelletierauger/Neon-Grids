@@ -188,6 +188,7 @@ buildSeed = function() {
 };
 
 seed = buildSeed();
+flip = false;
 
 draw = function() {
     bindFrameBuffer(texture, framebuf);
@@ -206,6 +207,7 @@ draw = function() {
     // let seed;
     if (drawCount % 48 == 0) {
         seed = buildSeed();
+        flip = !flip;
     }
     let ratio = 16/9;
     for (let i = 0; i < seed[0][1]; i++) {
@@ -237,8 +239,12 @@ draw = function() {
     drawRectangles(currentProgram);
     currentProgram = getProgram("smooth-dots");
     gl.useProgram(currentProgram);
-    drawAlligatorQuiet(currentProgram, seed);
-    // currentProgram = getProgram("rounded-square-2");
+    if (flip) {
+        drawAlligatorQuiet(currentProgram, seed);
+    } else {
+        drawAlligatorQuietWave(currentProgram, seed);
+    }
+        // currentProgram = getProgram("rounded-square-2");
     // gl.useProgram(currentProgram);
     // drawText(currentProgram);
     // ------------------------------
@@ -522,12 +528,186 @@ drawAlligatorQuiet = function(selectedProgram, seed) {
                 // console.log(limitY);
                 let size = Math.max(limitY[1]-limitY[0],limitX[1]-limitX[0]);
                 // console.log(size);
-                let m = ((i + j + k) % 2)*2-1;
+                let m = map(seed[0][1]+seed[1][i]+seed[2][j], 0, (i + j + k), 0, 1);
+                let m2 = map(seed[1][i]+seed[2][j], 0, (j + k), 0, 1);
                 
+                for (let l = 0; l < 2250; l++) {
+                    let x = Math.random();
+                    let y = Math.random();
+                    x = Math.cos(l-drawCount) * l * 1e-3;
+                    y = Math.sin(l-drawCount) * l * 1e-3;
+                    // x = map(x, 0, 1, limitX[0], limitX[1]) * 0.5;
+                    // y = map(y, 0, 1, limitY[0], limitY[1]) * 0.5;
+                    let p = -0.04;
+                    if (x > (limitX[0]-p) && x < (limitX[1]+p) && y > (limitY[0]-p) && y < (limitY[1]+p)) {
+                        vertices.push(x * (9 / 16), y);
+                        num++;
+                    }
+                }
+                // addRectangle(
+                //     (x1 - (ratio / 2)) * 2, (yy1 - 1 / 2) * 2,
+                //     (x2 - (ratio / 2)) * 2, (yy2 - 1 / 2) * 2,
+                //     r, g, b, a,
+                //     radius, border
+                // );
+            }
+        }
+    }
+    let al = 0.3;
+    for (let i = 0; i < 2500; i++) {
+        let m = map(i, 0, 2500, 15, 1);
+        let x = Math.cos(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.00009 * m;
+        let y = Math.sin(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.00009 * m;
+        // vertices.push(x * (9 / 16), y);
+        // num++;
+    }
+    sides = 7;
+    inc = (Math.PI * 2) / sides;
+    st = -drawCount * 1e-2;
+    for (let i = st; i <= (Math.PI * 2.1) - inc + st; i += inc) {
+        let p0 = [Math.cos(i), Math.sin(i)];
+        let p1 = [Math.cos(i + inc), Math.sin(i + inc)];
+        for (let p = 0; p < 1; p += 0.01) {
+            let x = lerp(p0[0], p1[0], p) * 0.5;
+            let y = lerp(p0[1], p1[1], p) * 0.5;
+            // vertices.push(x * (9 / 16), y);
+            // num++;
+        }
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, dotsVBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    // Get the attribute location
+    var coord = gl.getAttribLocation(selectedProgram, "coordinates");
+    // Point an attribute to the currently bound VBO
+    gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
+    // Enable the attribute
+    gl.enableVertexAttribArray(coord);
+    let timeUniformLocation = gl.getUniformLocation(selectedProgram, "time");
+    gl.uniform1f(timeUniformLocation, drawCount);
+    gl.drawArrays(gl.POINTS, 0, num);
+}
+
+drawAlligatorQuiet = function(selectedProgram, seed) {
+    vertices = [];
+    num=0;
+    //     let seed = [
+    //     [0, 3],
+    //     [8, 6, 2], 
+    //     [3, 2, 2]
+    // ];
+    let ratio = 16/9;
+    let par = 0;
+    for (let i = 0; i < seed[0][1]; i++) {
+        let y1 = (1 / seed[0][1]) * i;
+        for (let j = 0; j < seed[1][i]; j++) {
+            let x1 = (ratio / seed[1][i]) * j;
+            let x2 = (ratio / seed[1][i]) * (j+1);
+            for (let k = 0; k < seed[2][i]; k++) {
+                let yy1, yy2;
+                yy1 = y1 + ((1 / seed[0][1] / seed[2][i]) * k);
+                yy2 = y1 + ((1 / seed[0][1] / seed[2][i]) * (k+1));
+                let limitX = [(x1 - (ratio / 2)) * 2, (x2 - (ratio / 2)) * 2];
+                let limitY = [(yy1 - 1 / 2) * 2, (yy2 - 1 / 2) * 2];
+                // console.log(limitY);
+                let size = Math.max(limitY[1]-limitY[0],limitX[1]-limitX[0]);
+                // console.log(size);
+                let m = ((i + j + k) % 2)*2-1;
+                let ss = map(Math.sin(drawCount*1e-3), -1, 1, 2e-4, 2e-5);
                 for (let l = 0; l < 1250 * size; l++) {
-                    let x = Math.cos(l*((k+10)*1e-4*l)+((j+10)*1e-1*l)+par+drawCount*1e-2*m) * l * 0.002 + (lerp(limitX[0], limitX[1], 0.5));
-                    let y = Math.sin(l*((k+10)*1e-4*l)+((j+10)*1e-1*l)+par+drawCount*1e-2*m) * l * 0.002 + (lerp(limitY[0], limitY[1], 0.5));
-                    par += (i + j + k);
+                    let mm = map(l, 0, 1250 * size, 15, 1);
+                    let x = Math.cos(l-drawCount*m)*Math.tan((1e2+i+j+k)*par*ss) * l * 0.002 + (lerp(limitX[0], limitX[1], 0.5));
+                    let y = Math.sin(l-drawCount*m)*Math.tan((1e2+i+j+k)*par*ss) * l * 0.002 + (lerp(limitY[0], limitY[1], 0.5));
+                    // x *= mm * 1e-1;
+                    // y *= mm * 1e-1;
+                    par += (1 + i + j + k) * 0.05;
+                    let p = -0.04;
+                    if (x > (limitX[0]-p) && x < (limitX[1]+p) && y > (limitY[0]-p) && y < (limitY[1]+p)) {
+                        vertices.push(x * (9 / 16), y);
+                        num++;
+                    }
+                }
+                // addRectangle(
+                //     (x1 - (ratio / 2)) * 2, (yy1 - 1 / 2) * 2,
+                //     (x2 - (ratio / 2)) * 2, (yy2 - 1 / 2) * 2,
+                //     r, g, b, a,
+                //     radius, border
+                // );
+            }
+        }
+    }
+    let al = 0.3;
+    for (let i = 0; i < 2500; i++) {
+        let m = map(i, 0, 2500, 15, 1);
+        let x = Math.cos(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.00009 * m;
+        let y = Math.sin(i + Math.sin(i + drawCount * 1e-2 + Math.PI)) * i * 0.00009 * m;
+        // vertices.push(x * (9 / 16), y);
+        // num++;
+    }
+    sides = 7;
+    inc = (Math.PI * 2) / sides;
+    st = -drawCount * 1e-2;
+    for (let i = st; i <= (Math.PI * 2.1) - inc + st; i += inc) {
+        let p0 = [Math.cos(i), Math.sin(i)];
+        let p1 = [Math.cos(i + inc), Math.sin(i + inc)];
+        for (let p = 0; p < 1; p += 0.01) {
+            let x = lerp(p0[0], p1[0], p) * 0.5;
+            let y = lerp(p0[1], p1[1], p) * 0.5;
+            // vertices.push(x * (9 / 16), y);
+            // num++;
+        }
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, dotsVBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    // Get the attribute location
+    var coord = gl.getAttribLocation(selectedProgram, "coordinates");
+    // Point an attribute to the currently bound VBO
+    gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
+    // Enable the attribute
+    gl.enableVertexAttribArray(coord);
+    let timeUniformLocation = gl.getUniformLocation(selectedProgram, "time");
+    gl.uniform1f(timeUniformLocation, drawCount);
+    gl.drawArrays(gl.POINTS, 0, num);
+}
+
+drawAlligatorQuietWave = function(selectedProgram, seed) {
+    vertices = [];
+    num=0;
+    //     let seed = [
+    //     [0, 3],
+    //     [8, 6, 2], 
+    //     [3, 2, 2]
+    // ];
+    let ratio = 16/9;
+    let par = 0;
+    for (let i = 0; i < seed[0][1]; i++) {
+        let y1 = (1 / seed[0][1]) * i;
+        for (let j = 0; j < seed[1][i]; j++) {
+            let x1 = (ratio / seed[1][i]) * j;
+            let x2 = (ratio / seed[1][i]) * (j+1);
+            for (let k = 0; k < seed[2][i]; k++) {
+                let yy1, yy2;
+                yy1 = y1 + ((1 / seed[0][1] / seed[2][i]) * k);
+                yy2 = y1 + ((1 / seed[0][1] / seed[2][i]) * (k+1));
+                let limitX = [(x1 - (ratio / 2)) * 2, (x2 - (ratio / 2)) * 2];
+                let limitY = [(yy1 - 1 / 2) * 2, (yy2 - 1 / 2) * 2];
+                // console.log(limitY);
+                let size = Math.max(limitY[1]-limitY[0],limitX[1]-limitX[0]);
+                // console.log(size);
+                let m = ((i + j + k) % 2)*2-1;
+                let n = (1 + i + j + k);
+                let ss = map(Math.sin(drawCount*1e-3), -1, 1, 2e-4, 2e-5);
+                for (let l = 0; l < 500 * size; l++) {
+                    let mm = map(l, 0, 250 * size, 15, 1);
+                    let x = Math.cos(l-drawCount*m)*Math.tan((1e2+i+j+k)*par*ss) * l * 0.002 + (lerp(limitX[0], limitX[1], 0.5));
+                    let y = Math.sin(l-drawCount*m)*Math.tan((1e2+i+j+k)*par*ss) * l * 0.002 + (lerp(limitY[0], limitY[1], 0.5));
+                    // x *= mm * 1e-1;
+                    // y *= mm * 1e-1;
+                    x = map(l, 0, 500 * size, limitX[0], limitX[1]);
+                    y = map(Math.sin(x*1e1*n*1e4-drawCount*8e-1+Math.tan(x*Math.tan(x+drawCount*1e-1))*Math.sin(drawCount*1e-1)), -1, 1, limitY[0]+0.1, limitY[1]-0.1) + y * map(Math.sin(drawCount), -1, 1, 0, 1e-1);
+                    // x = lerp(x, xr, Math.pow(Math.sin(drawCount * 1e-2) * 0.5 + 0.5, 15.));
+                    // y = lerp(y, yr, Math.pow(Math.sin(drawCount * 1e-2) * 0.5 + 0.5, 15.));
+                    // y = map(y, limitY[0], limitY[1])
+                    par += (1 + i + j + k) * 0.05;
                     let p = -0.04;
                     if (x > (limitX[0]-p) && x < (limitX[1]+p) && y > (limitY[0]-p) && y < (limitY[1]+p)) {
                         vertices.push(x * (9 / 16), y);
