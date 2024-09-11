@@ -22,6 +22,7 @@ let pmouse = [0, 0];
 let smouse = [0, 0];
 let resolutionScalar = 0.5;
 let resolutionBG;
+let batchExport = false;
 
 
 let texture, texture2, framebuf, framebuf2;
