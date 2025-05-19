@@ -98,8 +98,13 @@ function setup() {
     socket = io.connect('http://localhost:8080');
     pixelDensity(1);
     noCanvas();
+    // cnvs = document.getElementById('my_Canvas');
+    // gl = cnvs.getContext('webgl', { preserveDrawingBuffer: true });
+
     cnvs = document.getElementById('my_Canvas');
-    gl = cnvs.getContext('webgl', { preserveDrawingBuffer: true });
+    // gl = cnvs.getContext('webgl', { preserveDrawingBuffer: true });
+    gl = cnvs.getContext('webgl', {antialias: false, depth: false});
+    
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     // Enable the depth test
     gl.enable(gl.DEPTH_TEST);
